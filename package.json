@@ -1,0 +1,19 @@
+{
+  "name": "jeevan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "JEEVAN — Emergency Response Platform. `npm install` + `npm run dev` is all you need; Python deps are bootstrapped automatically into an isolated venv.",
+  "scripts": {
+    "postinstall": "node scripts/setup.mjs",
+    "setup": "node scripts/setup.mjs",
+    "dev": "node scripts/run.mjs dev",
+    "start": "node scripts/run.mjs start",
+    "seed": "node scripts/run.mjs seed",
+    "migrate": "node scripts/run.mjs migrate",
+    "test": "node scripts/run.mjs test",
+    "lint": "node scripts/run.mjs lint"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

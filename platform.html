@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a0c">
+<title>JEEVAN — Emergency Response Platform</title>
+<style>
+:root{
+  --bg:#0a0a0c; --bg2:#0c0908; --panel:rgba(255,255,255,.03);
+  --line:#332211; --line-soft:rgba(255,120,40,.16);
+  --orange:#ff5500; --amber:#ffb37a; --ink:#f4efe9; --dim:rgba(244,239,233,.55);
+  --ok:#37d67a; --warn:#ffb020; --bad:#ff3b30;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:radial-gradient(1100px 500px at 80% -10%,rgba(255,85,0,.05),transparent 60%),
+  linear-gradient(180deg,#0a0a0c,#0b0807);color:var(--ink);
+  font-family:"Helvetica Neue",Helvetica,Arial,"Segoe UI",sans-serif;min-height:100vh;
+  -webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input{font:inherit}
+.grain{position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.04;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ---------- shared ---------- */
+.card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.012));
+  border:1px solid var(--line);border-radius:18px;padding:22px}
+.mut{color:var(--dim)}
+.small{font-size:12px}
+.eyebrow{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:rgba(244,239,233,.45)}
+.badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 10px;border-radius:11px;
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line)}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.b-crit{color:#ff6a5c;border-color:rgba(255,80,60,.4);background:rgba(255,60,40,.08)}
+.b-high{color:#ff9a5c;border-color:rgba(255,120,40,.4);background:rgba(255,85,0,.08)}
+.b-med{color:#ffd166;border-color:rgba(255,180,60,.35);background:rgba(255,170,40,.07)}
+.b-low{color:#9ab8a8;border-color:rgba(140,190,160,.3);background:rgba(120,200,150,.06)}
+.b-ok{color:#5bd69a;border-color:rgba(80,220,140,.35);background:rgba(60,220,140,.07)}
+.b-off{color:#8d8578;border-color:var(--line);background:rgba(255,255,255,.02)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 20px;
+  border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.22em;text-indent:.22em;
+  text-transform:uppercase;transition:.3s;border:1px solid transparent}
+.btn-p{background:linear-gradient(180deg,#ff6a1a,#dd4a00);color:#fff;box-shadow:0 10px 30px rgba(255,85,0,.3)}
+.btn-p:hover{box-shadow:0 14px 40px rgba(255,85,0,.5)}
+.btn-g{border-color:var(--line);color:var(--dim)}
+.btn-g:hover{border-color:rgba(255,120,40,.5);color:var(--ink)}
+.btn-d{border-color:rgba(255,80,60,.4);color:#ff8a7a;background:rgba(255,60,40,.06)}
+.btn-sm{height:32px;padding:0 13px;font-size:9.5px;border-radius:9px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.field label{display:block;font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;
+  color:rgba(244,239,233,.55);margin-bottom:7px}
+.field input{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);
+  background:rgba(255,255,255,.03);color:var(--ink);padding:0 14px;outline:none;transition:.3s}
+.field input:focus{border-color:rgba(255,110,40,.6);box-shadow:0 0 24px rgba(255,85,0,.15)}
+.field input::placeholder{color:rgba(244,239,233,.25)}
+.pw-wrap{position:relative}
+.pw-eye{position:absolute;right:6px;top:5px;width:34px;height:34px;display:flex;align-items:center;
+  justify-content:center;border-radius:9px;color:var(--dim)}
+.pw-eye:hover{color:var(--amber)}
+.spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+  border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- auth screens ---------- */
+.auth{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
+.auth-side{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:60px 56px;border-right:1px solid rgba(255,255,255,.04)}
+.auth-glow{position:absolute;width:820px;height:820px;top:-320px;right:-280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,85,0,.25),transparent 62%);filter:blur(80px)}
+.auth-brand{position:absolute;top:44px;left:56px;display:flex;align-items:center;gap:11px;
+  font-size:12px;letter-spacing:.4em;font-weight:600}
+.auth-side h1{font-size:clamp(34px,3.6vw,54px);font-weight:300;line-height:1.12;max-width:520px}
+.auth-side h1 em{font-style:normal;color:var(--orange)}
+.ticker{margin-top:34px;display:flex;flex-direction:column;gap:10px}
+.ticker span{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:rgba(244,239,233,.4)}
+.ticker b{width:5px;height:5px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange)}
+.auth-main{display:flex;align-items:center;justify-content:center;padding:48px 24px}
+.auth-card{width:min(400px,92vw);border-radius:22px;border:1px solid var(--line);
+  background:rgba(14,10,8,.55);backdrop-filter:blur(18px) saturate(1.2);
+  -webkit-backdrop-filter:blur(18px) saturate(1.2);padding:38px 34px 28px;text-align:center;
+  box-shadow:0 40px 100px rgba(0,0,0,.5),inset 0 0 40px rgba(255,85,0,.04)}
+.auth-logo{width:52px;height:52px;border-radius:16px;border:1px solid rgba(255,120,40,.35);
+  background:rgba(255,85,0,.07);display:flex;align-items:center;justify-content:center;
+  margin:0 auto;box-shadow:0 0 30px rgba(255,85,0,.22)}
+.auth-title{margin-top:15px;font-size:16px;font-weight:600;letter-spacing:.42em;text-indent:.42em}
+.auth-sub{margin-top:8px;font-size:11px;letter-spacing:.06em;color:var(--dim)}
+.auth-form{margin-top:26px;display:flex;flex-direction:column;gap:15px;text-align:left}
+.auth-err{display:none;gap:10px;align-items:flex-start;text-align:left;padding:11px 13px;
+  border-radius:11px;border:1px solid rgba(255,80,60,.4);background:rgba(255,60,40,.08);
+  font-size:12.5px;line-height:1.45;color:#ffb4a8}
+.auth-err.show{display:flex}
+.auth-err i{flex:none;width:15px;height:15px;border:1.5px solid #ff8a7a;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-style:normal;font-size:10px;margin-top:1px}
+.auth-row{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.auth-row label{display:flex;align-items:center;gap:7px;color:var(--dim);cursor:pointer}
+.auth-row input{accent-color:var(--orange)}
+.auth-row a{color:rgba(244,239,233,.5);transition:.3s}
+.auth-row a:hover{color:var(--amber)}
+.auth-alt{margin-top:17px;font-size:12px;color:var(--dim)}
+.auth-alt a{color:var(--amber)}
+.auth-back{position:absolute;top:44px;right:44px;font-size:10px;letter-spacing:.26em;
+  text-transform:uppercase;color:rgba(244,239,233,.4)}
+.auth-back:hover{color:var(--amber)}
+.devcode{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;border:1px dashed var(--line);
+  font-size:12px;color:var(--amber);text-align:left}
+
+/* ---------- app shell ---------- */
+.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+.side{border-right:1px solid rgba(255,255,255,.05);padding:26px 18px;display:flex;
+  flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.side .brand{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.4em;
+  font-weight:600;padding:0 10px 22px}
+.side a{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:11px;
+  font-size:12.5px;color:var(--dim);transition:.25s;border:1px solid transparent}
+.side a:hover{color:var(--ink);background:rgba(255,255,255,.03)}
+.side a.on{color:var(--ink);background:rgba(255,85,0,.09);border-color:rgba(255,120,40,.3)}
+.side a svg{flex:none;opacity:.8}
+.side .foot{margin-top:auto;padding:14px 10px 0;border-top:1px solid rgba(255,255,255,.05);
+  display:flex;flex-direction:column;gap:10px}
+.userchip{display:flex;align-items:center;gap:10px;font-size:12px}
+.avatar{width:32px;height:32px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 50% 30%,#33241b,#160e09);border:1px solid rgba(255,120,40,.4);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--amber)}
+.main{padding:30px 36px 70px;max-width:1180px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:30px}
+.topbar h2{font-size:22px;font-weight:600;letter-spacing:-.01em}
+.livechip{display:flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:14px;
+  border:1px solid var(--line);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+.livechip i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);
+  animation:pulse 2s infinite}
+.livechip.off i{background:#666;box-shadow:none;animation:none}
+@keyframes pulse{50%{opacity:.4}}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.stat .v{font-size:30px;font-weight:600;letter-spacing:-.02em;margin-top:8px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.tabs a{padding:9px 16px;border-radius:11px;border:1px solid var(--line);font-size:11px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--dim);transition:.25s}
+.tabs a.on{border-color:rgba(255,120,40,.5);color:var(--ink);background:rgba(255,85,0,.09)}
+.list{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;
+  border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.015)}
+.stepper{display:flex;flex-direction:column;gap:0}
+.stp{display:flex;gap:14px;position:relative;padding-bottom:20px}
+.stp:last-child{padding-bottom:0}
+.stp::before{content:"";position:absolute;left:11px;top:24px;bottom:0;width:1px;
+  background:rgba(255,255,255,.08)}
+.stp:last-child::before{display:none}
+.stp .dot{width:23px;height:23px;border-radius:50%;flex:none;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);background:#0d0b0a}
+.stp.done .dot{border-color:rgba(255,120,40,.6);background:rgba(255,85,0,.15);color:var(--amber)}
+.stp.now .dot{border-color:var(--orange);background:var(--orange);color:#fff;
+  box-shadow:0 0 16px rgba(255,85,0,.7)}
+.stp .t{font-size:12.5px;letter-spacing:.06em;color:var(--dim);padding-top:3px}
+.stp.done .t,.stp.now .t{color:var(--ink)}
+.sos-btn{width:190px;height:190px;border-radius:50%;border:2px solid rgba(255,80,60,.5);
+  background:radial-gradient(circle at 50% 32%,rgba(255,60,40,.28),rgba(120,10,0,.14) 75%);
+  color:#fff;font-size:34px;font-weight:800;letter-spacing:.14em;text-indent:.14em;cursor:pointer;
+  box-shadow:0 0 60px rgba(255,40,20,.3),inset 0 0 40px rgba(255,60,40,.15);transition:.3s;
+  display:flex;align-items:center;justify-content:center;margin:0 auto}
+.sos-btn:hover{transform:scale(1.04);box-shadow:0 0 90px rgba(255,40,20,.5)}
+.sos-btn:active{transform:scale(.97)}
+.sos-btn[disabled]{opacity:.5;pointer-events:none}
+.mapbox{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#0b0a0c}
+.mapbox svg{display:block;width:100%;height:auto}
+.bar{height:9px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:5px;
+  background:linear-gradient(90deg,#ff6a1a,#ff9040);box-shadow:0 0 12px rgba(255,85,0,.6)}
+.drop{border:1.5px dashed var(--line);border-radius:18px;padding:44px 24px;text-align:center;
+  transition:.3s;cursor:pointer}
+.drop:hover,.drop.over{border-color:rgba(255,120,40,.6);background:rgba(255,85,0,.05)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(244,239,233,.4);padding:10px 12px;border-bottom:1px solid var(--line)}
+td{padding:12px;border-bottom:1px solid rgba(255,255,255,.05)}
+tr:hover td{background:rgba(255,255,255,.015)}
+.skel{height:64px;border-radius:14px;border:1px solid rgba(255,255,255,.05);
+  background:linear-gradient(90deg,rgba(255,255,255,.03) 25%,rgba(255,255,255,.07) 50%,
+  rgba(255,255,255,.03) 75%);background-size:220% 100%;animation:shim 1.6s linear infinite}
+@keyframes shim{from{background-position:180% 0}to{background-position:-80% 0}}
+.statebox{padding:44px 20px;text-align:center;border:1px dashed var(--line);border-radius:16px}
+.statebox .big{font-size:15px;margin-bottom:6px}
+.statebox .mut{font-size:12.5px;margin-bottom:18px}
+.toasts{position:fixed;right:22px;bottom:22px;z-index:200;display:flex;flex-direction:column;gap:10px;
+  max-width:360px}
+.toast{border:1px solid var(--line);border-left:3px solid var(--orange);border-radius:13px;
+  background:rgba(16,11,8,.92);backdrop-filter:blur(12px);padding:13px 16px;font-size:12.5px;
+  box-shadow:0 20px 50px rgba(0,0,0,.5);animation:tin .4s cubic-bezier(.2,.8,.3,1)}
+.toast b{display:block;font-size:12px;margin-bottom:2px}
+.toast.ok{border-left-color:var(--ok)}.toast.bad{border-left-color:var(--bad)}
+@keyframes tin{from{opacity:0;transform:translateY(14px)}}
+@media(max-width:960px){
+  .auth{grid-template-columns:1fr}.auth-side{display:none}
+  .shell{grid-template-columns:1fr}
+  .side{position:fixed;z-index:100;left:-260px;width:236px;transition:.35s;background:#0c0908}
+  .side.open{left:0}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .main{padding:22px 18px 60px}
+  .menu-btn{display:flex !important}
+}
+.menu-btn{display:none;width:38px;height:38px;border-radius:11px;border:1px solid var(--line);
+  align-items:center;justify-content:center}
+.scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+.scrim.on{display:block}
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<div class="scrim" id="scrim" onclick="toggleSide(false)"></div>
+<div id="app"></div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ════════════════════════ API CLIENT ════════════════════════ */
+const API = '/api/v1';
+const SKEY = 'jv_at', RKEY = 'jv_rt';
+const store = {
+  get at(){ return localStorage.getItem(SKEY) || sessionStorage.getItem(SKEY); },
+  get rt(){ return localStorage.getItem(RKEY) || sessionStorage.getItem(RKEY); },
+  save(access, refresh, remember){
+    this.clear();
+    (remember ? localStorage : sessionStorage).setItem(SKEY, access);
+    (remember ? localStorage : sessionStorage).setItem(RKEY, refresh);
+  },
+  clear(){ localStorage.removeItem(SKEY); sessionStorage.removeItem(SKEY);
+           localStorage.removeItem(RKEY); sessionStorage.removeItem(RKEY); }
+};
+
+async function api(path, opts = {}, retried = false){
+  const headers = {};
+  if (AUTH.at) headers['Authorization'] = 'Bearer ' + AUTH.at;
+  let body;
+  if (opts.form){ body = opts.form; }
+  else if (opts.body !== undefined){ headers['Content-Type'] = 'application/json'; body = JSON.stringify(opts.body); }
+  let res;
+  try{
+    res = await fetch(API + path, { method: opts.method || 'GET', headers, body });
+  }catch(e){
+    throw { status: 0, code: 'network_error', message: 'Cannot reach the JEEVAN server. Check your connection and retry.' };
+  }
+  if (res.status === 401 && AUTH.rt && !retried && path !== '/auth/login'){
+    const ok = await tryRefresh();
+    if (ok) return api(path, opts, true);
+    guardExpire();
+  }
+  let data = {};
+  try{ data = await res.json(); }catch(e){}
+  if (!res.ok){
+    const d = data.detail || {};
+    throw { status: res.status, code: d.code || 'error',
+            message: d.message || ('Request failed (' + res.status + ').') };
+  }
+  return data;
+}
+async function tryRefresh(){
+  try{
+    const r = await fetch(API + '/auth/refresh', { method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ refresh_token: AUTH.rt }) });
+    if (!r.ok) return false;
+    const d = await r.json();
+    AUTH.save(d.access_token, d.refresh_token, !!localStorage.getItem(SKEY));
+    return true;
+  }catch(e){ return false; }
+}
+function guardExpire(){
+  store.clear(); AUTH.at = null; AUTH.rt = null;
+  toast('Session expired', 'Sign in again to continue.', 'bad');
+  nav('/login?expired=1');
+}
+</script>
+
+<script>
+/* ════════════════════════ STATE / ROUTER ════════════════════════ */
+const ROLE_HOME = { citizen:'/citizen', ambulance_driver:'/ambulance',
+  hospital_staff:'/hospital', police_officer:'/police', administrator:'/admin' };
+const ROLE_LABEL = { citizen:'Citizen', ambulance_driver:'Ambulance Driver',
+  hospital_staff:'Hospital Staff', police_officer:'Police Officer', administrator:'Administrator' };
+const AUTH = {
+  get at(){ return store.at; }, get rt(){ return store.rt; },
+  save(a,r,m){ store.save(a,r,m); },
+  clear(){ store.clear(); }
+};
+let ME = null, PERMS = [], WS = null, wsTimer = null;
+
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function nav(path){ history.pushState({}, '', path); render(); }
+window.addEventListener('popstate', render);
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[data-link]');
+  if (a){ e.preventDefault(); nav(a.getAttribute('href')); }
+});
+
+async function render(){
+  const app = document.getElementById('app');
+  const path = location.pathname;
+  const pub = ['/login','/signup','/forgot-password'];
+  if (pub.includes(path)){
+    if (AUTH.at){
+      try{ ME = (await api('/auth/me')); 
+        return nav(ROLE_HOME[ME.user.role] || '/');
+      }catch(e){}
+    }
+    app.innerHTML = path === '/signup' ? viewSignup() :
+                    path === '/forgot-password' ? viewForgot() : viewLogin();
+    wireAuth(path);
+    return;
+  }
+  /* protected */
+  if (!AUTH.at) return nav('/login');
+  if (!ME){
+    try{ ME = await api('/auth/me'); PERMS = ME.permissions; }
+    catch(e){ return; }
+  }
+  const roleRoot = Object.keys(ROLE_HOME).find(r => path.startsWith(ROLE_HOME[r]));
+  if (roleRoot && ME.user.role !== roleRoot){
+    return nav(ROLE_HOME[ME.user.role]);          /* frontend guard: no cross-role URLs */
+  }
+  connectWS();
+  const seg = path.split('/').filter(Boolean);    /* e.g. ['admin','cctv'] */
+  app.innerHTML = shell(seg[0], seg[1] || '');
+  window.scrollTo(0,0);
+  const view = { citizen:viewCitizen, ambulance:viewAmbulance, hospital:viewHospital,
+                 police:viewPolice, administrator:viewAdmin }[ME.user.role];
+  if (view) view(seg[1] || '');
+}
+function go(p){ nav(p); }
+</script>
+
+<script>
+/* ════════════════════════ UI HELPERS ════════════════════════ */
+function toast(title, body, type=''){
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = '<b>' + esc(title) + '</b>' + esc(body || '');
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='.5s'; setTimeout(()=>el.remove(),500); }, 5200);
+}
+const sevBadge = s => ({critical:'b-crit',high:'b-high',medium:'b-med',low:'b-low'}[s] || 'b-low');
+const statusBadge = s => s==='dispatched' ? 'b-high' : s==='completed' ? 'b-ok'
+  : s==='active' ? 'b-crit' : s==='pending_verification' ? 'b-med' : 'b-off';
+const fmtT = iso => { try{ return new Date(iso).toLocaleString([], {month:'short',day:'numeric',
+  hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; } };
+const LOGO = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="#ff6a1a" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="37 14"/><circle cx="12" cy="12" r="3.1" fill="#ff6a1a"/></svg>';
+
+async function loadBox(el, fn, emptyMsg){
+  el.innerHTML = '<div class="skel"></div><div class="skel" style="margin-top:12px"></div><div class="skel" style="margin-top:12px"></div>';
+  try{
+    const data = await fn();
+    if (data === null || (Array.isArray(data) && !data.length)){
+      el.innerHTML = '<div class="statebox"><div class="big">Nothing here yet</div><div class="mut">' +
+        esc(emptyMsg || 'Data will appear as events happen.') + '</div></div>';
+      return data;
+    }
+    return data;
+  }catch(err){
+    el.innerHTML = '<div class="statebox" style="border-color:rgba(255,80,60,.4)"><div class="big">Something went wrong</div><div class="mut">' +
+      esc(err.message || 'Error') + '</div><button class="btn btn-g btn-sm" onclick="render()">Retry</button></div>';
+    return null;
+  }
+}
+
+function stepper(steps, current){
+  /* steps: [{k,label}], current: index of active step (-1 = none started) */
+  return '<div class="stepper">' + steps.map((s,i)=>`
+    <div class="stp ${i<current?'done':i===current?'now':''}">
+      <span class="dot">${i<current?'✓':i+1}</span><span class="t">${esc(s.label)}</span>
+    </div>`).join('') + '</div>';
+}
+
+function mapSVG(points, label){
+  const W=640,H=340, X=lng=>70+(lng-75.78)*(W-140)/0.22, Y=lat=>30+(31.0-lat)*(H-70)/0.18;
+  const ic = {amb:'#ff9040', hosp:'#8fb6c9', em:'#ff3b30', unit:'#c9b98a'};
+  const dots = points.map(p=>{
+    const x=X(p.longitude), y=Y(p.latitude), c=ic[p.type]||'#fff';
+    const r = p.type==='em' ? 6 : 4.5;
+    const pulse = p.type==='em' ? `<circle cx="${x}" cy="${y}" r="11" fill="none" stroke="${c}" stroke-opacity=".5"><animate attributeName="r" values="6;16" dur="1.6s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values=".6;0" dur="1.6s" repeatCount="indefinite"/></circle>` : '';
+    return pulse + `<circle cx="${x}" cy="${y}" r="${r}" fill="${c}" stroke="#fff" stroke-width="1" stroke-opacity=".7"/><text x="${x+9}" y="${y+3.5}" fill="rgba(244,239,233,.75)" font-size="9.5" font-family="Helvetica">${esc(p.label||'')}</text>`;
+  }).join('');
+  let grid='';
+  for(let gx=0;gx<=W;gx+=40) grid+=`<line x1="${gx}" y1="0" x2="${gx}" y2="${H}" stroke="rgba(255,255,255,.04)"/>`;
+  for(let gy=0;gy<=H;gy+=40) grid+=`<line x1="0" y1="${gy}" x2="${W}" y2="${gy}" stroke="rgba(255,255,255,.04)"/>`;
+  return `<div class="mapbox"><svg viewBox="0 0 ${W} ${H}">
+    <rect width="${W}" height="${H}" fill="#0b0a0c"/>${grid}
+    <path d="M0 ${H*0.55} Q ${W*0.3} ${H*0.42} ${W*0.55} ${H*0.58} T ${W} ${H*0.5}" fill="none" stroke="rgba(255,120,40,.14)" stroke-width="10"/>
+    <path d="M${W*0.3} 0 Q ${W*0.35} ${H*0.5} ${W*0.28} ${H}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="7"/>
+    ${dots}
+    <text x="14" y="${H-12}" fill="rgba(244,239,233,.35)" font-size="9" letter-spacing="2">${esc(label||'OPERATIONS MAP')} · GOOGLE MAPS SLOT</text>
+  </svg></div>`;
+}
+
+function toggleSide(open){
+  document.querySelector('.side')?.classList.toggle('open', open);
+  document.getElementById('scrim')?.classList.toggle('on', open);
+}
+
+/* ════════════════════════ WEBSOCKET ════════════════════════ */
+function connectWS(){
+  if (WS && WS.readyState <= 1) return;
+  try{ WS = new WebSocket((location.protocol==='https:'?'wss://':'ws://') + location.host + '/ws?token=' + AUTH.at); }
+  catch(e){ return; }
+  WS.onopen = ()=>{ const c=document.querySelector('.livechip'); if(c){c.classList.remove('off');c.querySelector('span').textContent='Live';} };
+  WS.onclose = ()=>{ const c=document.querySelector('.livechip'); if(c){c.classList.add('off');c.querySelector('span').textContent='Reconnecting';}
+    clearTimeout(wsTimer); wsTimer = setTimeout(()=>{ if(AUTH.at) connectWS(); }, 4000); };
+  WS.onmessage = ev => {
+    let m; try{ m = JSON.parse(ev.data); }catch(e){ return; }
+    const T = {
+      sos_created: ()=>toast('SOS activated', 'Citizen emergency — teams being notified.'),
+      emergency_created: ()=>toast('Emergency created', 'Verification passed. Resources dispatched.', 'ok'),
+      cctv_status: ()=>toast('CCTV update', 'Processing status: ' + (m.status||'')),
+      cctv_result: ()=>toast(m.detected ? 'Accident detected' : 'Analysis complete',
+        m.detected ? 'Confidence ' + Math.round(m.confidence*100) + '% · severity ' + m.severity : 'No accident detected in footage.', m.detected?'':'ok'),
+      mission_state: ()=>toast('Mission update', 'State: ' + (m.state||'').replace(/_/g,' ').toUpperCase()),
+      hospital_prep: ()=>toast('Hospital update', 'Preparation state: ' + (m.state||'').toUpperCase()),
+      case_closed: ()=>toast('Case closed', 'Police case marked closed.', 'ok'),
+      presence: null,
+    };
+    T[m.type] && T[m.type]();
+    clearTimeout(window.__rT); window.__rT = setTimeout(()=>{ if(!location.pathname.startsWith('/login')) render(); }, 700);
+  };
+}
+</script>
+
+<script>
+/* ════════════════════════ AUTH VIEWS ════════════════════════ */
+function authShell(cardHtml, brand){
+  return `
+  <div class="auth">
+    <div class="auth-side">
+      <div class="auth-glow"></div>
+      <div class="auth-brand">${LOGO} JEEVAN</div>
+      <h1>Every second counts.<br>Response, <em>reimagined.</em></h1>
+      <div class="ticker">
+        <span><b></b>AI accident detection — CCTV network</span>
+        <span><b></b>Instant dispatch — ambulance · hospital · police</span>
+        <span><b></b>Live coordination — Punjab response grid</span>
+      </div>
+    </div>
+    <div class="auth-main" style="position:relative">
+      <a class="auth-back" href="/" data-link>← Home</a>
+      <div class="auth-card">${cardHtml}</div>
+    </div>
+  </div>`;
+}
+
+function viewLogin(){
+  const expired = location.search.includes('expired=1');
+  return authShell(`
+    <div class="auth-logo">${LOGO}</div>
+    <div class="auth-title">JEEVAN</div>
+    <div class="auth-sub">Emergency Response Platform</div>
+    ${expired ? '<div class="auth-err show" style="margin-top:18px"><i>!</i><span>Your session expired. Sign in again.</span></div>' : ''}
+    <div class="auth-err" id="loginErr" style="margin-top:18px"><i>!</i><span id="loginErrTx"></span></div>
+    <form class="auth-form" id="loginForm" autocomplete="off">
+      <div class="field"><label>Email or phone</label>
+        <input id="liIdent" placeholder="name@email.com  ·  +91…" required></div>
+      <div class="field"><label>Password</label>
+        <div class="pw-wrap"><input id="liPw" type="password" placeholder="••••••••••" required>
+        <button class="pw-eye" type="button" id="liEye" aria-label="show password">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+        </button></div></div>
+      <div class="auth-row">
+        <label><input type="checkbox" id="liRemember"> Remember me</label>
+        <a href="/forgot-password" data-link>Forgot password?</a>
+      </div>
+      <button class="btn btn-p" id="liBtn" type="submit">Sign in</button>
+    </form>
+    <div class="auth-alt">New to JEEVAN? <a href="/signup" data-link>Create an account</a></div>
+    <div class="auth-alt small" style="opacity:.65;margin-top:6px">Demo: admin@jeevan.app · Jeevan@123</div>
+  `);
+}
+
+function viewSignup(){
+  return authShell(`
+    <div class="auth-logo">${LOGO}</div>
+    <div class="auth-title">JEEVAN</div>
+    <div class="auth-sub">Create your citizen account</div>
+    <div class="auth-err" id="suErr" style="margin-top:18px"><i>!</i><span id="suErrTx"></span></div>
+    <form class="auth-form" id="suForm" autocomplete="off">
+      <div class="field"><label>Full name</label><input id="suName" placeholder="Arjun Mehta" required></div>
+      <div class="field"><label>Email</label><input id="suEmail" type="email" placeholder="name@email.com" required></div>
+      <div class="field"><label>Phone</label><input id="suPhone" placeholder="+91…" ></div>
+      <div class="field"><label>Password</label><input id="suPw" type="password" placeholder="min. 8 characters" required></div>
+      <button class="btn btn-p" id="suBtn" type="submit">Create account</button>
+    </form>
+    <div class="auth-alt">Already registered? <a href="/login" data-link>Sign in</a></div>
+  `);
+}
+
+function viewForgot(){
+  return authShell(`
+    <div class="auth-logo">${LOGO}</div>
+    <div class="auth-title">RECOVERY</div>
+    <div class="auth-sub">Reset your JEEVAN password</div>
+    <div class="auth-err" id="fpErr" style="margin-top:18px"><i>!</i><span id="fpErrTx"></span></div>
+    <form class="auth-form" id="fpForm" autocomplete="off">
+      <div class="field"><label>Email or phone</label><input id="fpIdent" required placeholder="name@email.com"></div>
+      <button class="btn btn-p" id="fpBtn" type="submit">Send recovery code</button>
+    </form>
+    <form class="auth-form" id="fpForm2" style="display:none">
+      <div class="devcode" id="fpDev"></div>
+      <div class="field"><label>6-digit code</label><input id="fpCode" maxlength="6" required></div>
+      <div class="field"><label>New password</label><input id="fpNew" type="password" required></div>
+      <button class="btn btn-p" id="fpBtn2" type="submit">Reset password</button>
+    </form>
+    <div class="auth-alt"><a href="/login" data-link>← Back to sign in</a></div>
+  `);
+}
+
+function errBox(id, msg){
+  const box = document.getElementById(id), tx = document.getElementById(id + 'Tx');
+  if (!box) return;
+  tx.textContent = msg; box.classList.add('show');
+}
+
+function wireAuth(path){
+  const busy = (btn, on, label) => {
+    btn.disabled = on;
+    btn.innerHTML = on ? '<span class="spin"></span>' : label;
+  };
+  if (path === '/login'){
+    document.getElementById('liEye').onclick = () => {
+      const p = document.getElementById('liPw');
+      p.type = p.type === 'password' ? 'text' : 'password';
+    };
+    document.getElementById('loginForm').onsubmit = async e => {
+      e.preventDefault();
+      const btn = document.getElementById('liBtn');
+      document.getElementById('loginErr').classList.remove('show');
+      busy(btn, true, 'Sign in');
+      try{
+        const d = await api('/auth/login', { method:'POST', body:{
+          identifier: document.getElementById('liIdent').value,
+          password: document.getElementById('liPw').value,
+          remember: document.getElementById('liRemember').checked }});
+        AUTH.save(d.access_token, d.refresh_token, document.getElementById('liRemember').checked);
+        ME = { user: d.user }; PERMS = d.permissions;
+        toast('Welcome, ' + d.user.name.split(' ')[0], 'Signed in as ' + ROLE_LABEL[d.user.role] + '.', 'ok');
+        nav(ROLE_HOME[d.user.role] || '/');
+      }catch(err){
+        const map = {
+          invalid_credentials: 'Invalid email/phone or password. Please try again.',
+          account_disabled: 'This account has been deactivated. Contact your administrator.',
+          network_error: err.message };
+        errBox('loginErr', err.status >= 500 ? 'Server error — please retry in a moment.' :
+          (map[err.code] || err.message));
+        busy(btn, false, 'Sign in');
+      }
+    };
+  }
+  if (path === '/signup'){
+    document.getElementById('suForm').onsubmit = async e => {
+      e.preventDefault();
+      const btn = document.getElementById('suBtn');
+      busy(btn, true, 'Create account');
+      try{
+        const d = await api('/auth/register', { method:'POST', body:{
+          name: suName.value, email: suEmail.value, phone: suPhone.value, password: suPw.value }});
+        AUTH.save(d.access_token, d.refresh_token, true);
+        ME = { user: d.user }; PERMS = d.permissions;
+        nav('/citizen');
+      }catch(err){
+        errBox('suErr', err.code === 'email_taken' ? 'An account with this email already exists.' : err.message);
+        busy(btn, false, 'Create account');
+      }
+    };
+  }
+  if (path === '/forgot-password'){
+    let ident = '';
+    document.getElementById('fpForm').onsubmit = async e => {
+      e.preventDefault();
+      const btn = document.getElementById('fpBtn');
+      busy(btn, true, 'Sending');
+      try{
+        ident = fpIdent.value;
+        const d = await api('/auth/forgot-password', { method:'POST', body:{ identifier: ident }});
+        document.getElementById('fpForm').style.display = 'none';
+        document.getElementById('fpForm2').style.display = 'flex';
+        if (d.debug_code){
+          const dev = document.getElementById('fpDev');
+          dev.style.display = 'block';
+          dev.textContent = 'Demo environment — recovery code: ' + d.debug_code;
+        }
+        toast('Code sent', d.message, 'ok');
+      }catch(err){ errBox('fpErr', err.message); }
+      busy(btn, false, 'Send recovery code');
+    };
+    document.getElementById('fpForm2').onsubmit = async e => {
+      e.preventDefault();
+      const btn = document.getElementById('fpBtn2');
+      busy(btn, true, 'Resetting');
+      try{
+        const d = await api('/auth/reset-password', { method:'POST', body:{
+          identifier: ident, code: fpCode.value, new_password: fpNew.value }});
+        toast('Password reset', d.message, 'ok');
+        nav('/login');
+      }catch(err){
+        errBox('fpErr', err.code === 'invalid_code' ? 'Invalid or expired recovery code.' : err.message);
+        busy(btn, false, 'Reset password');
+      }
+    };
+  }
+}
+</script>
+
+<script>
+/* ════════════════════════ SHELL ════════════════════════ */
+const NAVS = {
+  citizen: [['/citizen','Overview','M3.5 9.5 10 4l6.5 5.5V16h-4.2v-3.8H7.7V16H3.5z'],
+            ['/citizen/sos','SOS','M12 3v3M12 18v3M3 12h3M18 12h3'],
+            ['/citizen/history','History','M5 12h14M12 5v14'],
+            ['/citizen/profile','Profile','M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20a7.5 7.5 0 0 1 15 0']],
+  ambulance_driver: [['/ambulance','Duty board','M3.5 9.5 10 4l6.5 5.5V16h-4.2v-3.8H7.7V16H3.5z'],
+            ['/ambulance/mission','Mission','M13 2.8 5.4 13.4h5l-1.8 7.8 7.6-10.6h-5z']],
+  hospital_staff: [['/hospital','Emergency board','M3.5 9.5 10 4l6.5 5.5V16h-4.2v-3.8H7.7V16H3.5z'],
+            ['/hospital/capacity','Capacity','M5 12h14M12 5v14']],
+  police_officer: [['/police','Live feed','M3.5 9.5 10 4l6.5 5.5V16h-4.2v-3.8H7.7V16H3.5z'],
+            ['/police/evidence','Evidence','M3.5 4.5h17v15h-17z'],
+            ['/police/traffic','Traffic','M5 19V9M12 19V5M19 19v-7']],
+  administrator: [['/admin','Overview','M3.5 9.5 10 4l6.5 5.5V16h-4.2v-3.8H7.7V16H3.5z'],
+            ['/admin/users','Users','M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20a7.5 7.5 0 0 1 15 0'],
+            ['/admin/units','Units','M3.5 3.5h7.2v7.2H3.5zM13.3 3.5h7.2v7.2h-7.2zM3.5 13.3h7.2v7.2H3.5zM13.3 13.3h7.2v7.2h-7.2z'],
+            ['/admin/analytics','Analytics','M5 19V9M12 19V5M19 19v-7'],
+            ['/admin/reports','Reports','M6 3.5h9l4 4v13H6z'],
+            ['/admin/cctv','CCTV / AI','M3.5 6.5h17v12h-17zM10 10.5v4l3.5-2z']],
+};
+
+function shell(role, sub){
+  const links = NAVS[role].map(([href,label,dd]) =>
+    `<a href="${href}" data-link class="${('/'+(sub||'')===href||href===location.pathname)?'on':''}">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${dd}"/></svg>${label}</a>`).join('');
+  const ini = ME.user.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  return `
+  <div class="shell">
+    <aside class="side">
+      <div class="brand">${LOGO} JEEVAN</div>
+      ${links}
+      <div class="foot">
+        <div class="userchip"><span class="avatar">${ini}</span>
+          <div><div style="font-weight:600">${esc(ME.user.name)}</div>
+          <div class="small mut">${ROLE_LABEL[ME.user.role]}</div></div></div>
+        <button class="btn btn-g btn-sm" onclick="logout()">Sign out</button>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:14px">
+          <button class="menu-btn" onclick="toggleSide(true)">
+            <svg width="17" height="17" viewBox="0 0 24 24" stroke="#c9c2ba" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+          <div><h2 id="pageTitle">${ROLE_LABEL[role]}</h2><div class="eyebrow" id="pageSub"></div></div>
+        </div>
+        <div class="livechip off"><i></i><span>Connecting</span></div>
+      </div>
+      <div id="view"></div>
+    </main>
+  </div>`;
+}
+
+async function logout(){
+  try{ await api('/auth/logout', {method:'POST'}); }catch(e){}
+  store.clear(); ME = null; PERMS = [];
+  if (WS){ WS.onclose = null; WS.close(); WS = null; }
+  nav('/login');
+}
+function setTitle(t, s){ document.getElementById('pageTitle').textContent = t;
+  document.getElementById('pageSub').textContent = s || ''; }
+
+const tabsHtml = items => '<div class="tabs">' + items.map(([href,l]) =>
+  `<a href="${href}" data-link class="${location.pathname===href?'on':''}">${l}</a>`).join('') + '</div>';
+
+/* ════════════════════════ CITIZEN ════════════════════════ */
+async function viewCitizen(sub){
+  const v = document.getElementById('view');
+  setTitle('Citizen', 'Your safety dashboard');
+  const tabs = sub || 'overview';
+  v.innerHTML = tabsHtml([['/citizen','Overview'],['/citizen/sos','SOS'],
+    ['/citizen/history','History'],['/citizen/profile','Profile']]) + '<div id="cbox"></div>';
+  const box = document.getElementById('cbox');
+  const d = await loadBox(box, () => api('/citizen/overview'), 'Your dashboard is ready.');
+  if (!d) return;
+  if (tabs === 'sos') return citizenSOS(box, d);
+  if (tabs === 'history') return citizenHistory(box, d);
+  if (tabs === 'profile') return citizenProfile(box, d);
+  const act = d.active_emergency;
+  box.innerHTML = `
+  <div class="grid g2">
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:18px">
+      <div class="eyebrow">Emergency SOS</div>
+      <button class="sos-btn" id="sosGo" ${act?'disabled':''}>SOS</button>
+      <div class="small mut" style="text-align:center;max-width:260px">
+        ${act ? 'An emergency is currently active. Teams are responding.' :
+          'Tap once. We capture your location and alert every response team instantly.'}</div>
+    </div>
+    <div class="card">
+      <div class="eyebrow" style="margin-bottom:14px">Response pipeline</div>
+      ${stepper([
+        {label:'Emergency detected'},
+        {label:'Location captured'},
+        {label:'Emergency created'},
+        {label:'Response teams notified'}],
+        act ? 3 : -1)}
+      ${act ? `<div class="small mut" style="margin-top:14px">Active since ${fmtT(act.created_at)} · ${esc(act.severity)} severity</div>`:''}
+    </div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <div class="eyebrow" style="margin-bottom:14px">Emergency contacts</div>
+      <div class="list">${d.contacts.length ? d.contacts.map(c=>`
+        <div class="row"><div><b>${esc(c.name)}</b><div class="small mut">${esc(c.relation||'Contact')} · ${esc(c.phone)}</div></div>
+        <a class="btn btn-g btn-sm" href="tel:${esc(c.phone)}">Call</a></div>`).join('')
+        : '<div class="small mut">No contacts yet — add them in Profile.</div>'}</div>
+    </div>
+    <div class="card">
+      <div class="eyebrow" style="margin-bottom:14px">Location & notifications</div>
+      ${mapSVG([{type:'em',longitude:d.location.longitude,latitude:d.location.latitude,label:'YOU'}],'YOUR AREA')}
+      <div class="list" style="margin-top:14px">
+        ${d.notifications.slice(0,3).map(n=>`<div class="row"><div><b class="small">${esc(n.title)}</b>
+          <div class="small mut">${esc(n.body)}</div></div><span class="small mut">${fmtT(n.created_at)}</span></div>`).join('')
+          || '<div class="small mut">No notifications.</div>'}
+      </div>
+    </div>
+  </div>`;
+  const btn = document.getElementById('sosGo');
+  if (btn) btn.onclick = () => doSOS(btn, d);
+}
+
+function citizenSOS(box, d){
+  box.innerHTML = `
+  <div class="grid g2">
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:18px;grid-column:1/-1">
+      <div class="eyebrow">One tap. Full response.</div>
+      <button class="sos-btn" id="sosGo" ${d.active_emergency?'disabled':''}>SOS</button>
+      <div id="sosLog" class="small mut">Press SOS to trigger the response pipeline.</div>
+    </div>
+  </div>`;
+  const btn = document.getElementById('sosGo');
+  if (btn) btn.onclick = () => doSOS(btn, d, true);
+}
+
+async function doSOS(btn, d, verbose){
+  btn.disabled = true;
+  const log = document.getElementById('sosLog');
+  const say = t => { if (log) log.innerHTML = t; };
+  say('<span class="badge b-crit"><i></i>Emergency detected</span>');
+  let lat = 30.9010, lng = 75.8573;
+  try{
+    const pos = await new Promise((res, rej) =>
+      navigator.geolocation ? navigator.geolocation.getCurrentPosition(res, rej, {timeout:5000}) : rej());
+    lat = pos.coords.latitude; lng = pos.coords.longitude;
+  }catch(e){ }
+  say('<span class="badge b-high"><i></i>Location captured</span> <span class="small mut">'+lat.toFixed(4)+', '+lng.toFixed(4)+'</span>');
+  try{
+    const em = await api('/emergencies/sos', { method:'POST', body:{ latitude:lat, longitude:lng, note:'Citizen SOS' }});
+    say('<span class="badge b-high"><i></i>Emergency created</span> <span class="small mut">#'+em.id.slice(0,8)+'</span>');
+    setTimeout(()=>{ say('<span class="badge b-ok"><i></i>Response teams notified</span> <span class="small mut">Ambulance · Hospital · Police</span>');
+      setTimeout(()=>render(), 1600); }, 900);
+  }catch(err){ say('<span class="badge b-crit"><i></i>Failed:</span> <span class="small mut">'+esc(err.message)+'</span>');
+    btn.disabled = false; }
+}
+
+function citizenHistory(box, d){
+  box.innerHTML = d.history.length ? `<div class="card"><table>
+    <tr><th>When</th><th>Severity</th><th>Status</th><th>Location</th></tr>
+    ${d.history.map(e=>`<tr><td>${fmtT(e.created_at)}</td>
+      <td><span class="badge ${sevBadge(e.severity)}"><i></i>${e.severity}</span></td>
+      <td><span class="badge ${statusBadge(e.status)}"><i></i>${e.status.replace('_',' ')}</span></td>
+      <td class="small mut">${e.latitude.toFixed(3)}, ${e.longitude.toFixed(3)}</td></tr>`).join('')}
+  </table></div>`
+  : '<div class="statebox"><div class="big">No emergencies on record</div><div class="mut">A quiet history is a good history.</div></div>';
+}
+
+async function citizenProfile(box, d){
+  box.innerHTML = `
+  <div class="grid g2">
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Personal information</div>
+      <div class="list">
+        <div class="row"><span class="mut small">Name</span><b>${esc(d.user.name)}</b></div>
+        <div class="row"><span class="mut small">Email</span><b>${esc(d.user.email)}</b></div>
+        <div class="row"><span class="mut small">Phone</span><b>${esc(d.user.phone||'—')}</b></div>
+        <div class="row"><span class="mut small">Medical profile</span><b>${esc(d.user.medical_profile||'—')}</b></div>
+      </div>
+      <button class="btn btn-g btn-sm" style="margin-top:16px" onclick="logout()">Sign out</button>
+    </div>
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Add emergency contact</div>
+      <div class="field" style="margin-bottom:12px"><label>Name</label><input id="ctN" placeholder="Simran Mehta"></div>
+      <div class="field" style="margin-bottom:12px"><label>Phone</label><input id="ctP" placeholder="+91…"></div>
+      <div class="field" style="margin-bottom:14px"><label>Relation</label><input id="ctR" placeholder="Spouse"></div>
+      <button class="btn btn-p btn-sm" id="ctAdd">Save contact</button>
+    </div>
+  </div>`;
+  document.getElementById('ctAdd').onclick = async () => {
+    try{
+      await api('/citizen/contacts', { method:'POST', body:{
+        name: ctN.value, phone: ctP.value, relation: ctR.value }});
+      toast('Contact saved', ctN.value + ' will be notified in emergencies.', 'ok');
+      render();
+    }catch(err){ toast('Could not save', err.message, 'bad'); }
+  };
+}
+
+/* ════════════════════════ AMBULANCE ════════════════════════ */
+const MISSION_STEPS = ['available','pending','accepted','en_route','arrived_scene',
+                       'patient_pickup','hospital_arrival','completed'];
+const MISSION_UI = [
+  {k:'available', label:'AVAILABLE'}, {k:'pending', label:'EMERGENCY REQUEST'},
+  {k:'accepted', label:'ACCEPTED'}, {k:'en_route', label:'EN ROUTE'},
+  {k:'arrived_scene', label:'ARRIVED'}, {k:'patient_pickup', label:'PATIENT PICKED UP'},
+  {k:'hospital_arrival', label:'HOSPITAL ARRIVAL'}, {k:'completed', label:'MISSION COMPLETED'}];
+
+async function viewAmbulance(sub){
+  setTitle('Ambulance', 'Duty console');
+  const v = document.getElementById('view');
+  v.innerHTML = tabsHtml([['/ambulance','Duty board'],['/ambulance/mission','Mission']]) +
+    '<div id="abox"></div>';
+  const box = document.getElementById('abox');
+  const d = await loadBox(box, () => api('/ambulance/overview'), 'Go online to start receiving requests.');
+  if (!d) return;
+  setTitle('Ambulance ' + d.ambulance.code, 'Duty console');
+  const missionIdx = d.mission ? MISSION_STEPS.indexOf(d.mission.state) : -1;
+  const availIdx = d.ambulance.online && d.ambulance.status === 'available' && !d.mission ? 0 : (d.mission ? missionIdx : (d.ambulance.online ? 0 : -1));
+  box.innerHTML = (sub !== 'mission' ? `
+  <div class="grid g3">
+    <div class="card stat"><div class="eyebrow">Unit</div><div class="v">${esc(d.ambulance.code)}</div>
+      <div style="margin-top:10px"><span class="badge ${d.ambulance.online?'b-ok':'b-off'}"><i></i>${d.ambulance.status}</span></div>
+      <button class="btn ${d.ambulance.online?'btn-d':'btn-p'} btn-sm" style="margin-top:16px" id="tgOnline">
+        ${d.ambulance.online?'Go offline':'Go online'}</button></div>
+    <div class="card stat"><div class="eyebrow">Pending requests</div><div class="v">${d.queue.length}</div>
+      <div class="small mut" style="margin-top:8px">Emergency requests awaiting acceptance</div></div>
+    <div class="card stat"><div class="eyebrow">Active mission</div>
+      <div class="v" style="font-size:16px;line-height:1.4;margin-top:12px">${d.mission ? esc(d.mission.state_label) : '—'}</div>
+      ${d.mission ? `<div class="small mut">ETA ${d.mission.eta_min} min</div>`:''}</div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Incoming emergency requests</div>
+      <div class="list">${d.queue.length ? d.queue.map(q=>`
+        <div class="row" style="align-items:flex-start">
+          <div><span class="badge ${sevBadge(q.emergency.severity)}"><i></i>${q.emergency.severity}</span>
+            <div style="margin-top:8px"><b>${esc(q.emergency.patient? q.emergency.patient.name : 'CCTV-detected incident')}</b>
+            <div class="small mut">${esc(q.emergency.note||'Roadside emergency')} · ${q.emergency.latitude.toFixed(3)}, ${q.emergency.longitude.toFixed(3)}</div>
+            ${q.emergency.patient && q.emergency.patient.medical_profile ? '<div class="small mut">Medical: '+esc(q.emergency.patient.medical_profile)+'</div>':''}</div></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-p btn-sm" onclick="missionAct('${q.id}','accept')">Accept</button>
+            <button class="btn btn-g btn-sm" onclick="missionAct('${q.id}','decline')">Decline</button></div>
+        </div>`).join('')
+        : '<div class="small mut">Queue is clear.</div>'}</div></div>
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Live navigation</div>
+      ${mapSVG([{type:'unit',longitude:d.ambulance.longitude,latitude:d.ambulance.latitude,label:d.ambulance.code}]
+        .concat(d.mission && d.mission.emergency ? [{type:'em',longitude:d.mission.emergency.longitude,latitude:d.mission.emergency.latitude,label:'SCENE'}] : []), 'DISPATCH GRID')}
+      ${d.mission ? `<div class="small mut" style="margin-top:12px">ETA to scene: <b style="color:var(--amber)">${d.mission.eta_min} min</b></div>`:''}
+    </div>
+  </div>` : '')
+  + `<div class="card" style="margin-top:16px"><div class="eyebrow" style="margin-bottom:18px">Mission state</div>
+      ${stepper(MISSION_UI, sub === 'mission' ? (d.mission ? missionIdx : -1) : availIdx)}
+      ${d.mission && d.mission.state !== 'completed' ? `
+        <div class="row" style="margin-top:20px">
+          <div><b>${esc(d.mission.emergency && d.mission.emergency.patient ? d.mission.emergency.patient.name : 'Unknown patient')}</b>
+          <div class="small mut">${d.mission.emergency ? esc(d.mission.emergency.note||'') : ''} · ETA ${d.mission.eta_min} min</div></div>
+          <button class="btn btn-p btn-sm" onclick="advanceMission()">Advance → ${esc(MISSION_UI[missionIdx+1] ? MISSION_UI[missionIdx+1].label : '')}</button>
+        </div>`:''}
+    </div>`;
+  const tg = document.getElementById('tgOnline');
+  if (tg) tg.onclick = async () => {
+    try{
+      await api('/ambulance/status', { method:'POST', body:{ online: !d.ambulance.online }});
+      toast(d.ambulance.online ? 'Offline' : 'Online', d.ambulance.online ? 'You will not receive new requests.' : 'Receiving emergency requests.', 'ok');
+      render();
+    }catch(err){ toast('Cannot change status', err.message, 'bad'); }
+  };
+}
+
+async function missionAct(id, act){
+  try{
+    await api(`/ambulance/missions/${id}/${act}`, { method:'POST' });
+    toast(act==='accept'?'Mission accepted':'Request declined', '', act==='accept'?'ok':'');
+    render();
+  }catch(err){ toast('Action failed', err.message, 'bad'); }
+}
+async function advanceMission(){
+  try{
+    const d = await api('/ambulance/mission/advance', { method:'POST' });
+    toast('Mission advanced', d.state_label, 'ok');
+    render();
+  }catch(err){ toast('Cannot advance', err.message, 'bad'); }
+}
+
+/* ════════════════════════ HOSPITAL ════════════════════════ */
+async function viewHospital(sub){
+  setTitle('Hospital', 'Emergency intake');
+  const v = document.getElementById('view');
+  v.innerHTML = tabsHtml([['/hospital','Emergency board'],['/hospital/capacity','Capacity']]) +
+    '<div id="hbox"></div>';
+  const box = document.getElementById('hbox');
+  const d = await loadBox(box, () => api('/hospital/overview'), 'No incoming emergencies.');
+  if (!d) return;
+  const h = d.hospital;
+  const capPanel = `
+    <div class="card"><div class="eyebrow" style="margin-bottom:16px">Capacity control</div>
+      <div class="grid g2">
+        <div><div class="small mut">General beds</div>
+          <div class="v">${h.beds_available}<span class="small mut"> / ${h.beds_total}</span></div>
+          <div class="bar" style="margin:10px 0 14px"><i style="width:${100*h.beds_available/Math.max(1,h.beds_total)}%"></i></div>
+          <button class="btn btn-g btn-sm" onclick="cap(-1,0)">− Free up</button>
+          <button class="btn btn-g btn-sm" onclick="cap(1,0)">+ Occupy</button></div>
+        <div><div class="small mut">ICU</div>
+          <div class="v">${h.icu_available}<span class="small mut"> / ${h.icu_total}</span></div>
+          <div class="bar" style="margin:10px 0 14px"><i style="width:${100*h.icu_available/Math.max(1,h.icu_total)}%"></i></div>
+          <button class="btn btn-g btn-sm" onclick="cap(0,-1)">− Free up</button>
+          <button class="btn btn-g btn-sm" onclick="cap(0,1)">+ Occupy</button></div>
+      </div></div>`;
+  if (sub === 'capacity'){
+    box.innerHTML = capPanel;
+    return;
+  }
+  const reqFor = sev => sev === 'critical' ? 'Trauma bay · ICU · Blood unit (O−)'
+    : sev === 'high' ? 'Trauma bay · X-ray · IV line' : 'Observation bed';
+  box.innerHTML = `
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="card stat"><div class="eyebrow">Preparedness</div>
+      <div class="v" style="font-size:18px;margin-top:10px"><span class="badge ${h.preparedness==='ready'?'b-ok':h.preparedness==='preparing'?'b-med':'b-crit'}"><i></i>${h.preparedness}</span></div></div>
+    <div class="card stat"><div class="eyebrow">Incoming patients</div><div class="v">${d.incoming.length}</div></div>
+    <div class="card stat"><div class="eyebrow">ICU available</div><div class="v">${h.icu_available}<span class="small mut">/${h.icu_total}</span></div></div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Incoming pipeline — patient → details → ETA → resources → prepare</div>
+      <div class="list">${d.incoming.length ? d.incoming.map(i=>`
+        <div class="row" style="align-items:flex-start">
+          <div><span class="badge ${sevBadge(i.emergency.severity)}"><i></i>${i.emergency.severity}</span>
+            <div style="margin-top:8px"><b>${esc(i.emergency.patient? i.emergency.patient.name : 'CCTV-detected victim')}</b>
+            <div class="small mut">${esc(i.emergency.patient && i.emergency.patient.medical_profile ? 'Medical: '+i.emergency.patient.medical_profile : 'No medical record')}</div>
+            <div class="small mut">ETA <b style="color:var(--amber)">${i.eta_min} min</b> · Requires: ${reqFor(i.emergency.severity)}</div></div></div>
+          <button class="btn ${i.state==='ready'?'btn-g':'btn-p'} btn-sm" onclick="prep('${i.id}')">
+            ${i.state==='pending'?'Prepare':i.state==='preparing'?'Mark ready':'Ready ✓'}</button>
+        </div>`).join('')
+        : '<div class="small mut">No incoming patients.</div>'}</div></div>
+    ${capPanel}
+  </div>`;
+}
+async function prep(id){
+  try{ const r = await api(`/hospital/dispatch/${id}/prepare`, {method:'POST'});
+    toast('Hospital updated', 'State: ' + r.state.toUpperCase(), 'ok'); render();
+  }catch(err){ toast('Failed', err.message, 'bad'); }
+}
+async function cap(b, i){
+  try{ await api('/hospital/capacity', {method:'POST', body:{beds_delta:b, icu_delta:i}}); render(); }
+  catch(err){ toast('Failed', err.message, 'bad'); }
+}
+
+/* ════════════════════════ POLICE ════════════════════════ */
+async function viewPolice(sub){
+  setTitle('Police', 'Incident command');
+  const v = document.getElementById('view');
+  v.innerHTML = tabsHtml([['/police','Live feed'],['/police/evidence','Evidence viewer'],
+    ['/police/traffic','Traffic']]) + '<div id="pbox"></div>';
+  const box = document.getElementById('pbox');
+  const d = await loadBox(box, () => api('/police/overview'), 'No incidents reported.');
+  if (!d) return;
+  if (sub === 'evidence'){
+    box.innerHTML = cctvPanel(d.footage, false);
+    wireUploader(() => render());
+    return;
+  }
+  if (sub === 'traffic'){
+    box.innerHTML = `<div class="grid g2"><div class="card">
+      <div class="eyebrow" style="margin-bottom:14px">Zone status</div>
+      <div class="list">${d.traffic.map(t=>`<div class="row"><b>${esc(t.zone)}</b>
+        <span class="badge ${t.status==='clear'?'b-ok':t.status==='heavy'?'b-med':'b-crit'}"><i></i>${t.status}</span></div>`).join('')}
+      </div></div>
+      <div class="card"><div class="eyebrow" style="margin-bottom:14px">Road-blocking information</div>
+      <div class="list">${d.cases.filter(c=>c.severity==='critical'||c.severity==='high').slice(0,4).map(c=>
+        `<div class="row"><div><b class="small">${c.severity.toUpperCase()} incident</b>
+        <div class="small mut">${c.latitude.toFixed(3)}, ${c.longitude.toFixed(3)} — verify lane blockage on scene</div></div>
+        <span class="badge ${c.police_state==='closed'?'b-ok':'b-crit'}"><i></i>${c.police_state}</span></div>`).join('')
+        || '<div class="small mut">No obstructions reported.</div>'}</div></div></div>`;
+    return;
+  }
+  const ems = d.cases;
+  box.innerHTML = `
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Live incident feed</div>
+      <div class="list" id="feed">${ems.slice(0,8).map(e=>`
+        <div class="row" style="align-items:flex-start">
+          <div><span class="badge ${sevBadge(e.severity)}"><i></i>${e.severity}</span>
+            <span class="badge ${statusBadge(e.status)}" style="margin-left:6px"><i></i>${e.status.replace('_',' ')}</span>
+            <div class="small mut" style="margin-top:6px">${fmtT(e.created_at)} · ${e.latitude.toFixed(3)}, ${e.longitude.toFixed(3)} · ${esc(e.note||'')}</div></div>
+          ${e.police_state==='open' ? `<button class="btn btn-d btn-sm" onclick="closeCase('${e.id}')">Close case</button>`
+            : '<span class="badge b-ok"><i></i>closed</span>'}
+        </div>`).join('') || '<div class="small mut">Feed is quiet.</div>'}</div></div>
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Accident locations</div>
+      ${mapSVG(ems.filter(e=>e.status!=='rejected').slice(0,6).map(e=>(
+        {type:'em',longitude:e.longitude,latitude:e.latitude,label:e.severity.slice(0,3).toUpperCase()})),'INCIDENT MAP')}
+    </div>
+  </div>`;
+}
+async function closeCase(id){
+  try{ await api(`/police/cases/${id}/close`, {method:'POST'});
+    toast('Case closed', 'Logged to audit trail.', 'ok'); render();
+  }catch(err){ toast('Failed', err.message, 'bad'); }
+}
+
+/* ════════════════════════ CCTV UPLOADER (shared) ════════════════════════ */
+function cctvPanel(footage, isAdmin){
+  return `
+  <div class="grid g2">
+    <div class="card">
+      <div class="eyebrow" style="margin-bottom:16px">Upload CCTV footage</div>
+      <div class="drop" id="drop">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="rgba(255,140,60,.8)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 12px"><path d="M12 16V5M8 9l4-4 4 4"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+        <div style="font-size:14px;margin-bottom:6px">Drag &amp; drop video</div>
+        <div class="small mut" style="margin-bottom:14px">or</div>
+        <button class="btn btn-g btn-sm" onclick="document.getElementById('cf').click()">Choose file</button>
+        <input type="file" id="cf" accept=".mp4,.avi,.mov,video/mp4,video/x-msvideo,video/quicktime" style="display:none">
+        <div class="small mut" style="margin-top:14px">MP4 / AVI / MOV · max 100 MB</div>
+      </div>
+      <div id="upState" style="margin-top:16px"></div>
+    </div>
+    <div class="card">
+      <div class="eyebrow" style="margin-bottom:16px">Pipeline</div>
+      ${stepper([{label:'UPLOADING'},{label:'UPLOADED'},{label:'PROCESSING'},
+                 {label:'AI ANALYSIS'},{label:'RESULT'}], -1)}
+      <div id="upResult"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><div class="eyebrow" style="margin-bottom:14px">Analyses</div>
+    <table><tr><th>File</th><th>Status</th><th>Detection</th><th>Confidence</th><th>Severity</th><th>Incident</th><th>When</th></tr>
+    ${(footage||[]).map(f=>{
+      const a = f.analysis;
+      return `<tr><td>${esc(f.filename)}</td>
+        <td><span class="badge ${f.status==='result'?'b-ok':f.status==='failed'?'b-crit':'b-med'}"><i></i>${f.status}</span></td>
+        <td>${a ? (a.detected ? '<span class="badge b-crit"><i></i>accident</span>' : '<span class="badge b-ok"><i></i>clear</span>') : '—'}</td>
+        <td>${a ? Math.round(a.confidence*100)+'%' : '—'}</td>
+        <td>${a && a.detected ? `<span class="badge ${sevBadge(a.severity)}"><i></i>${a.severity}</span>` : '—'}</td>
+        <td class="small mut">${f.emergency_id ? '#'+f.emergency_id.slice(0,8) : '—'}</td>
+        <td class="small mut">${fmtT(f.uploaded_at)}</td></tr>`;
+    }).join('') || '<tr><td colspan="7" class="small mut">No footage analyzed yet.</td></tr>'}
+    </table>
+  </div>`;
+}
+
+function wireUploader(after){
+  const drop = document.getElementById('drop'), inp = document.getElementById('cf');
+  if (!drop) return;
+  ['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => { if (e.dataTransfer.files[0]) send(e.dataTransfer.files[0]); });
+  inp.onchange = () => { if (inp.files[0]) send(inp.files[0]); };
+
+  function setStep(idx){
+    const s = document.querySelector('.stepper'); if (!s) return;
+    [...s.querySelectorAll('.stp')].forEach((el,i)=>{
+      el.classList.toggle('done', i < idx);
+      el.classList.toggle('now', i === idx);
+    });
+  }
+  function say(html){ const u = document.getElementById('upState'); if (u) u.innerHTML = html; }
+  function result(html){ const r = document.getElementById('upResult'); if (r) r.innerHTML = html; }
+
+  async function poll(id){
+    for (let i = 0; i < 60; i++){
+      const f = await api('/cctv/' + id);
+      if (f.status === 'result'){
+        setStep(4);
+        const a = f.analysis || {};
+        result(a && a.detected !== undefined ? `
+          <div class="row" style="margin-top:16px;align-items:flex-start">
+            <div><b>${a.detected ? 'Accident detected' : 'No accident detected'}</b>
+            <div class="small mut">Model ${esc(a.model_name||'')} v${esc(a.model_version||'')} · ${fmtT(a.timestamp)}</div>
+            ${f.emergency_id ? '<div class="small mut">Incident ID: <b>#'+f.emergency_id.slice(0,8)+'</b> · severity <b>'+esc(a.severity)+'</b></div>' : ''}
+            ${a.location ? '<div class="small mut">Location: '+a.location.latitude.toFixed(4)+', '+a.location.longitude.toFixed(4)+'</div>' : ''}</div>
+            <span class="badge ${a.detected?'b-crit':'b-ok'}"><i></i>${Math.round((a.confidence||0)*100)}%</span>
+          </div>` : '<div class="small mut" style="margin-top:14px">Analysis finished.</div>');
+        toast('Analysis complete', a.detected ? 'Accident detected — engine engaged.' : 'Footage clear.', a.detected ? '' : 'ok');
+        return;
+      }
+      if (f.status === 'failed'){
+        setStep(-1);
+        result('<div class="small mut" style="margin-top:14px;color:#ffb4a8">Processing failed: '+esc(f.error||'unknown')+'</div>');
+        toast('Processing failed', f.error || 'The AI service reported an error.', 'bad');
+        return;
+      }
+      setStep(f.status === 'processing' ? 2 : f.status === 'ai_analysis' ? 3 : 1);
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
+
+  async function send(file){
+    const ext = '.' + (file.name.split('.').pop() || '').toLowerCase();
+    if (!['.mp4','.avi','.mov'].includes(ext)){
+      say('<span class="badge b-crit"><i></i>Invalid file</span> <span class="small mut">Only MP4, AVI and MOV are accepted.</span>');
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024){
+      say('<span class="badge b-crit"><i></i>File too large</span> <span class="small mut">Maximum size is 100 MB.</span>');
+      return;
+    }
+    setStep(0);
+    const fd = new FormData();
+    fd.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', API + '/cctv/upload');
+    xhr.setRequestHeader('Authorization', 'Bearer ' + AUTH.at);
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable){
+        const pct = Math.round(e.loaded / e.total * 100);
+        say(`<div class="small" style="margin-bottom:8px">${esc(file.name)} · ${(file.size/1048576).toFixed(1)} MB</div>
+             <div class="bar"><i style="width:${pct}%"></i></div><div class="small mut" style="margin-top:6px">${pct}%</div>`);
+      }
+    };
+    xhr.onload = async () => {
+      if (xhr.status === 201){
+        const d = JSON.parse(xhr.responseText);
+        setStep(1); say('<span class="badge b-ok"><i></i>Uploaded</span> <span class="small mut">#'+d.id.slice(0,8)+'</span>');
+        await poll(d.id);
+        after && setTimeout(after, 2500);
+      } else {
+        let msg = 'Upload failed (' + xhr.status + ').';
+        try{ msg = JSON.parse(xhr.responseText).detail.message || msg; }catch(e){}
+        setStep(-1); say('<span class="badge b-crit"><i></i>Upload failed</span> <span class="small mut">'+esc(msg)+'</span>');
+      }
+    };
+    xhr.onerror = () => { setStep(-1); say('<span class="badge b-crit"><i></i>Network error</span>'); };
+    xhr.send(fd);
+  }
+}
+
+/* ════════════════════════ ADMIN ════════════════════════ */
+async function viewAdmin(sub){
+  setTitle('Command Center', 'Administrator');
+  const v = document.getElementById('view');
+  v.innerHTML = tabsHtml([['/admin','Overview'],['/admin/users','Users'],['/admin/units','Units'],
+    ['/admin/analytics','Analytics'],['/admin/reports','Reports'],['/admin/cctv','CCTV / AI']]) +
+    '<div id="vbox"></div>';
+  const box = document.getElementById('vbox');
+  if (sub === 'users') return adminUsers(box);
+  if (sub === 'units') return adminUnits(box);
+  if (sub === 'analytics') return adminAnalytics(box);
+  if (sub === 'reports') return adminReports(box);
+  if (sub === 'cctv'){
+    const d = await loadBox(box, () => api('/cctv'), 'No footage yet.');
+    if (!d) return;
+    box.innerHTML = cctvPanel(d.items, true);
+    wireUploader(() => render());
+    return;
+  }
+  const d = await loadBox(box, () => api('/admin/overview'), 'System idle.');
+  if (!d) return;
+  const s = d.stats;
+  const pts = d.map.ambulances.map(a=>({type:'unit',longitude:a.longitude,latitude:a.latitude,label:a.code}))
+    .concat(d.map.hospitals.map(h=>({type:'hosp',longitude:h.longitude,latitude:h.latitude,label:h.name.split(' ')[0]})))
+    .concat(d.map.emergencies.map(e=>({type:'em',longitude:e.longitude,latitude:e.latitude,label:e.status.slice(0,4).toUpperCase()})));
+  box.innerHTML = `
+  <div class="grid g4">
+    <div class="card stat"><div class="eyebrow">Total users</div><div class="v">${s.total_users}</div></div>
+    <div class="card stat"><div class="eyebrow">Active emergencies</div><div class="v" style="color:var(--orange)">${s.active_emergencies}</div></div>
+    <div class="card stat"><div class="eyebrow">Active ambulances</div><div class="v">${s.active_ambulances}</div></div>
+    <div class="card stat"><div class="eyebrow">Hospitals</div><div class="v">${s.hospitals}</div></div>
+    <div class="card stat"><div class="eyebrow">Police units</div><div class="v">${s.police_units}</div></div>
+    <div class="card stat"><div class="eyebrow">Resolved incidents</div><div class="v" style="color:var(--ok)">${s.resolved_incidents}</div></div>
+    <div class="card" style="grid-column:span 2"><div class="eyebrow">Network status</div>
+      <div style="margin-top:14px"><span class="badge b-ok"><i></i>API operational</span>
+      <span class="badge b-ok" style="margin-left:6px"><i></i>AI service connected</span>
+      <span class="badge b-ok" style="margin-left:6px"><i></i>WebSocket live</span></div>
+      <div class="small mut" style="margin-top:14px">Response grid: Punjab — Ludhiana sector</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Live map</div>${mapSVG(pts,'LIVE OPERATIONS')}</div>
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Recent emergencies</div>
+      <div class="list">${d.recent.slice(0,6).map(e=>`
+        <div class="row" style="align-items:flex-start">
+          <div><span class="badge ${sevBadge(e.severity)}"><i></i>${e.severity}</span>
+            <span class="badge ${statusBadge(e.status)}" style="margin-left:6px"><i></i>${e.status.replace('_',' ')}</span>
+            <div class="small mut" style="margin-top:6px">${fmtT(e.created_at)} · ${esc(e.source)} · ${e.latitude.toFixed(3)}, ${e.longitude.toFixed(3)}</div></div>
+          ${e.status==='pending_verification' ? `
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-p btn-sm" onclick="verify('${e.id}',true)">Verify</button>
+              <button class="btn btn-g btn-sm" onclick="verify('${e.id}',false)">Reject</button></div>`:''}
+        </div>`).join('') || '<div class="small mut">No emergencies.</div>'}</div></div>
+  </div>`;
+}
+async function verify(id, approve){
+  try{ await api(`/admin/emergencies/${id}/verify`, {method:'POST', body:{approve}});
+    toast(approve ? 'Verified & dispatched' : 'Rejected', '', approve?'ok':''); render();
+  }catch(err){ toast('Failed', err.message, 'bad'); }
+}
+async function adminUsers(box){
+  const d = await loadBox(box, () => api('/admin/users'), 'No users.');
+  if (!d) return;
+  box.innerHTML = `<div class="card"><table>
+    <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr>
+    ${d.items.map(u=>`<tr><td><b>${esc(u.name)}</b></td><td class="small mut">${esc(u.email)}</td>
+      <td><span class="badge b-low"><i></i>${ROLE_LABEL[u.role]||u.role}</span></td>
+      <td><span class="badge ${u.is_active?'b-ok':'b-crit'}"><i></i>${u.is_active?'active':'disabled'}</span></td>
+      <td><button class="btn ${u.is_active?'btn-d':'btn-p'} btn-sm" onclick="toggleUser('${u.id}',${!u.is_active})">
+        ${u.is_active?'Disable':'Enable'}</button></td></tr>`).join('')}
+  </table></div>`;
+}
+async function toggleUser(id, active){
+  try{ await api(`/admin/users/${id}/active`, {method:'POST', body:{is_active:active}});
+    toast(active?'User enabled':'User disabled', 'Action audit-logged.', 'ok'); render();
+  }catch(err){ toast('Failed', err.message, 'bad'); }
+}
+async function adminUnits(box){
+  const d = await loadBox(box, () => api('/admin/units'), 'No units registered.');
+  if (!d) return;
+  box.innerHTML = `
+  <div class="grid g2">
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Hospitals — bed management</div>
+      <div class="list">${d.hospitals.map(h=>`<div class="row"><div><b>${esc(h.name)}</b>
+        <div class="small mut">Beds ${h.beds_available}/${h.beds_total} · ICU ${h.icu_available}/${h.icu_total} · ${h.preparedness}</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn btn-g btn-sm" onclick="capAdm('${h.id}',1,0)">+Bed</button>
+          <button class="btn btn-g btn-sm" onclick="capAdm('${h.id}',-1,0)">−Bed</button>
+          <button class="btn btn-g btn-sm" onclick="capAdm('${h.id}',0,1)">+ICU</button>
+          <button class="btn btn-g btn-sm" onclick="capAdm('${h.id}',0,-1)">−ICU</button></div></div>`).join('')}</div></div>
+    <div class="card"><div class="eyebrow" style="margin-bottom:14px">Fleet & police</div>
+      <div class="list">${d.ambulances.map(a=>`<div class="row"><b>${esc(a.code)}</b>
+        <div style="display:flex;gap:8px;align-items:center"><span class="small mut">${esc(a.driver||'unassigned')}</span>
+        <span class="badge ${a.online?'b-ok':'b-off'}"><i></i>${a.status}</span></div></div>`).join('')}
+        ${d.police.map(p=>`<div class="row"><b>${esc(p.code)}</b><span class="small mut">${esc(p.station)}</span></div>`).join('')}
+      </div></div>
+  </div>`;
+}
+async function capAdm(id, b, i){
+  try{ await api(`/admin/hospitals/${id}/capacity`, {method:'POST', body:{beds_delta:b, icu_delta:i}}); render(); }
+  catch(err){ toast('Failed', err.message, 'bad'); }
+}
+async function adminAnalytics(box){
+  const d = await loadBox(box, () => api('/admin/analytics'), 'Not enough data yet.');
+  if (!d) return;
+  const max = Math.max(1, ...d.trend.map(t=>t.emergencies));
+  box.innerHTML = `
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="card stat"><div class="eyebrow">Avg response time</div><div class="v">${d.avg_response_min}<span class="small mut"> min</span></div></div>
+    <div class="card stat"><div class="eyebrow">Resolution rate</div><div class="v">${d.resolution_rate}%</div></div>
+    <div class="card stat"><div class="eyebrow">Severity mix</div>
+      <div style="margin-top:12px" class="list">${Object.entries(d.severity).map(([k,n])=>
+        `<div class="row" style="padding:8px 12px"><span class="small mut">${k}</span><b>${n}</b></div>`).join('')}</div></div>
+  </div>
+  <div class="card"><div class="eyebrow" style="margin-bottom:18px">Emergency trend — last 7 days</div>
+    <div style="display:flex;gap:14px;align-items:flex-end;height:180px">
+      ${d.trend.map(t=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end">
+        <b class="small">${t.emergencies}</b>
+        <div class="bar" style="width:70%;height:${Math.round(100*t.emergencies/max)}%;min-height:4px"><i></i></div>
+        <span class="small mut">${t.date}</span></div>`).join('')}
+    </div></div>`;
+}
+async function adminReports(box){
+  const d = await loadBox(box, () => api('/admin/reports'), 'No reports yet.');
+  if (!d) return;
+  box.innerHTML = `<div class="small mut" style="margin-bottom:14px">Generated ${fmtT(d.generated_at)}</div>
+  <div class="grid g2">${d.reports.map(r=>`<div class="card">
+    <div class="eyebrow" style="margin-bottom:12px">${esc(r.title)}</div>
+    <div class="list">${r.lines.map(l=>`<div class="row" style="padding:9px 12px"><span class="small">${esc(l)}</span></div>`).join('')}</div>
+  </div>`).join('')}</div>`;
+}
+</script>
+<script>render();</script>
+</body>
+</html>
